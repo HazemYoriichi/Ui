@@ -1,285 +1,42 @@
---// Enhanced Limitless UI Library Script with All Features
-getgenv().namehub = "Limitless Hub - Complete"
+--// UI Library Script
+getgenv().namehub = "Limitless Hub - Blade Ball"
 
 local UserInputService = game:GetService('UserInputService')
 local LocalPlayer = game:GetService('Players').LocalPlayer
 local TweenService = game:GetService('TweenService')
 local HttpService = game:GetService('HttpService')
 local CoreGui = game:GetService('CoreGui')
-local Mouse = LocalPlayer:GetMouse()
+local Mouse = LocalPlayer:GetMouse();
 local Players = game:GetService('Players')
 local RunService = game:GetService('RunService')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
--- Enhanced Library with all Limitless UI features
-local Limitless = {
-    connections = {},
-    Flags = {},
-    Enabled = true,
-    slider_drag = false,
-    core = nil,
-    dragging = false,
-    drag_position = nil,
-    start_position = nil,
-    -- Added theme system
-    themes = {},
-    currentTheme = "Dark",
-    notificationLower = false,
-    currentFont = "rbxasset://fonts/families/Montserrat.json",
-    notifications = {},
-    popups = {}
-}
-
--- Added default themes
-Limitless.themes["Dark"] = {
-    Name = "Dark",
-    Accent = "#18181b",
-    Dialog = "#18181b", 
-    Outline = "#FFFFFF",
-    Text = "#FFFFFF",
-    Placeholder = "#999999",
-    Background = "#0e0e10",
-    Button = "#52525b",
-    Icon = "#a1a1aa"
-}
-
-Limitless.themes["Light"] = {
-    Name = "Light",
-    Accent = "#f4f4f5",
-    Dialog = "#ffffff",
-    Outline = "#000000", 
-    Text = "#000000",
-    Placeholder = "#666666",
-    Background = "#ffffff",
-    Button = "#e4e4e7",
-    Icon = "#52525b"
+local Library = {
+    connections = {};
+    Flags = {};
+    Enabled = true;
+    slider_drag = false;
+    core = nil;
+    dragging = false;
+    drag_position = nil;
+    start_position = nil
 }
 
 if not isfolder("limitless hub") then
     makefolder("limitless hub")
 end
 
--- Added theme management functions
-function Limitless:AddTheme(themeData)
-    self.themes[themeData.Name] = themeData
-end
-
-function Limitless:SetTheme(themeName)
-    if self.themes[themeName] then
-        self.currentTheme = themeName
-        -- Apply theme to existing UI elements
-        self:ApplyTheme()
-    end
-end
-
-function Limitless:GetThemes()
-    local themeList = {}
-    for name, _ in pairs(self.themes) do
-        table.insert(themeList, name)
-    end
-    return themeList
-end
-
-function Limitless:GetCurrentTheme()
-    return self.currentTheme
-end
-
-function Limitless:ApplyTheme()
-    local theme = self.themes[self.currentTheme]
-    if not theme or not self.core then return end
-    
-    -- Apply theme colors to UI elements
-    for _, obj in pairs(self.core:GetDescendants()) do
-        if obj:IsA("Frame") and obj.Name == "Container" then
-            obj.BackgroundColor3 = Color3.fromHex(theme.Background)
-        elseif obj:IsA("TextLabel") then
-            obj.TextColor3 = Color3.fromHex(theme.Text)
-        end
-    end
-end
-
--- Added notification system
-function Limitless:SetNotificationLower(enabled)
-    self.notificationLower = enabled
-end
-
-function Limitless:Notify(data)
-    local title = data.Title or "Notification"
-    local content = data.Content or ""
-    local duration = data.Duration or 3
-    local icon = data.Icon or "bell"
-    
-    local notification = Instance.new("Frame")
-    notification.Name = "Notification"
-    notification.Size = UDim2.new(0, 300, 0, 80)
-    notification.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-    notification.BorderSizePixel = 0
-    notification.Parent = self.core
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 10)
-    corner.Parent = notification
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Name = "Title"
-    titleLabel.Size = UDim2.new(1, -20, 0, 25)
-    titleLabel.Position = UDim2.new(0, 10, 0, 5)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextScaled = true
-    titleLabel.FontFace = Font.new(self.currentFont, Enum.FontWeight.Bold)
-    titleLabel.Parent = notification
-    
-    local contentLabel = Instance.new("TextLabel")
-    contentLabel.Name = "Content"
-    contentLabel.Size = UDim2.new(1, -20, 0, 40)
-    contentLabel.Position = UDim2.new(0, 10, 0, 30)
-    contentLabel.BackgroundTransparency = 1
-    contentLabel.Text = content
-    contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    contentLabel.TextScaled = true
-    contentLabel.FontFace = Font.new(self.currentFont, Enum.FontWeight.Regular)
-    contentLabel.TextWrapped = true
-    contentLabel.Parent = notification
-    
-    -- Position notification
-    if self.notificationLower then
-        notification.Position = UDim2.new(1, -320, 1, -100 - (#self.notifications * 90))
-    else
-        notification.Position = UDim2.new(1, -320, 0, 20 + (#self.notifications * 90))
-    end
-    
-    table.insert(self.notifications, notification)
-    
-    -- Animate in
-    notification.Position = notification.Position + UDim2.new(0, 320, 0, 0)
-    TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Back), {
-        Position = notification.Position - UDim2.new(0, 320, 0, 0)
-    }):Play()
-    
-    -- Auto remove
-    task.wait(duration)
-    TweenService:Create(notification, TweenInfo.new(0.3), {
-        Position = notification.Position + UDim2.new(0, 320, 0, 0)
-    }):Play()
-    
-    task.wait(0.3)
-    notification:Destroy()
-    
-    -- Remove from notifications table
-    for i, notif in ipairs(self.notifications) do
-        if notif == notification then
-            table.remove(self.notifications, i)
-            break
-        end
-    end
-end
-
--- Added popup system
-function Limitless:Popup(data)
-    local title = data.Title or "Popup"
-    local content = data.Content or ""
-    local buttons = data.Buttons or {{"OK", function() end}}
-    
-    local popup = Instance.new("Frame")
-    popup.Name = "Popup"
-    popup.Size = UDim2.new(0, 400, 0, 200)
-    popup.Position = UDim2.new(0.5, -200, 0.5, -100)
-    popup.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-    popup.BorderSizePixel = 0
-    popup.Parent = self.core
-    popup.ZIndex = 1000
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 15)
-    corner.Parent = popup
-    
-    local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -20, 0, 30)
-    titleLabel.Position = UDim2.new(0, 10, 0, 10)
-    titleLabel.BackgroundTransparency = 1
-    titleLabel.Text = title
-    titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    titleLabel.TextScaled = true
-    titleLabel.FontFace = Font.new(self.currentFont, Enum.FontWeight.Bold)
-    titleLabel.Parent = popup
-    
-    local contentLabel = Instance.new("TextLabel")
-    contentLabel.Size = UDim2.new(1, -20, 0, 100)
-    contentLabel.Position = UDim2.new(0, 10, 0, 50)
-    contentLabel.BackgroundTransparency = 1
-    contentLabel.Text = content
-    contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    contentLabel.TextScaled = true
-    contentLabel.FontFace = Font.new(self.currentFont, Enum.FontWeight.Regular)
-    contentLabel.TextWrapped = true
-    contentLabel.Parent = popup
-    
-    -- Create buttons
-    local buttonFrame = Instance.new("Frame")
-    buttonFrame.Size = UDim2.new(1, -20, 0, 40)
-    buttonFrame.Position = UDim2.new(0, 10, 1, -50)
-    buttonFrame.BackgroundTransparency = 1
-    buttonFrame.Parent = popup
-    
-    local buttonLayout = Instance.new("UIListLayout")
-    buttonLayout.FillDirection = Enum.FillDirection.Horizontal
-    buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-    buttonLayout.Padding = UDim.new(0, 10)
-    buttonLayout.Parent = buttonFrame
-    
-    for _, buttonData in ipairs(buttons) do
-        local button = Instance.new("TextButton")
-        button.Size = UDim2.new(0, 80, 1, 0)
-        button.BackgroundColor3 = Color3.fromRGB(66, 89, 182)
-        button.BorderSizePixel = 0
-        button.Text = buttonData[1]
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.FontFace = Font.new(self.currentFont, Enum.FontWeight.SemiBold)
-        button.Parent = buttonFrame
-        
-        local buttonCorner = Instance.new("UICorner")
-        buttonCorner.CornerRadius = UDim.new(0, 8)
-        buttonCorner.Parent = button
-        
-        button.MouseButton1Click:Connect(function()
-            popup:Destroy()
-            buttonData[2]()
-        end)
-    end
-    
-    table.insert(self.popups, popup)
-    return popup
-end
-
--- Added font management
-function Limitless:SetFont(fontId)
-    self.currentFont = fontId
-    self:ApplyTheme() -- Reapply to update fonts
-end
-
--- Added window transparency and size functions
-function Limitless:GetTransparency()
-    return self.core and self.core.Container.BackgroundTransparency > 0
-end
-
-function Limitless:GetWindowSize()
-    return self.core and self.core.Container.Size or UDim2.new(0, 699, 0, 426)
-end
-
-
-function Limitless:disconnect()
-    for _, value in Limitless.connections do
-        if not Limitless.connections[value] then
+function Library:disconnect()
+    for _, value in Library.connections do
+        if not Library.connections[value] then
             continue
         end
-        Limitless.connections[value]:Disconnect()
-        Limitless.connections[value] = nil
+        Library.connections[value]:Disconnect()
+        Library.connections[value] = nil
     end
 end
 
-function Limitless:clear()
+function Library:clear()
     for _, object in CoreGui:GetChildren() do
         if object.Name ~= "limitless" then
             continue
@@ -288,29 +45,29 @@ function Limitless:clear()
     end
 end
 
-function Limitless:exist()
-    if not Limitless.core then return end
-    if not Limitless.core.Parent then return end
+function Library:exist()
+    if not Library.core then return end
+    if not Library.core.Parent then return end
     return true
 end
 
-function Limitless:save_flags()
-    if not Limitless.exist() then return end
-    local flags = HttpService:JSONEncode(Limitless.Flags)
+function Library:save_flags()
+    if not Library.exist() then return end
+    local flags = HttpService:JSONEncode(Library.Flags)
     writefile(`limitless hub/{game.GameId}.lua`, flags)
 end
 
-function Limitless:load_flags()
-    if not isfile(`limitless hub/{game.GameId}.lua`) then Limitless.save_flags() return end
+function Library:load_flags()
+    if not isfile(`limitless hub/{game.GameId}.lua`) then Library.save_flags() return end
     local flags = readfile(`limitless hub/{game.GameId}.lua`)
-    if not flags then Limitless.save_flags() return end
-    Limitless.Flags = HttpService:JSONDecode(flags)
+    if not flags then Library.save_flags() return end
+    Library.Flags = HttpService:JSONDecode(flags)
 end
 
-Limitless.load_flags()
-Limitless.clear()
+Library.load_flags()
+Library.clear()
 
-function Limitless:play_startup_sound()
+function Library:play_startup_sound()
     local sound = Instance.new("Sound")
     sound.SoundId = "rbxassetid://6114974207"
     sound.Volume = 0.5
@@ -319,7 +76,7 @@ function Limitless:play_startup_sound()
     sound:Destroy()
 end
 
-function Limitless:create_startup_effects(container)
+function Library:create_startup_effects(container)
     local particles = Instance.new("Frame")
     particles.Name = "StartupParticles"
     particles.Parent = container
@@ -353,7 +110,7 @@ function Limitless:create_startup_effects(container)
     particles:Destroy()
 end
 
-function Limitless:open()
+function Library:open()
     self.Container.Visible = true
     self.Shadow.Visible = true
     self.Mobile.Modal = true
@@ -372,7 +129,7 @@ function Limitless:open()
     openTween2:Play()
 end
 
-function Limitless:close()
+function Library:close()
     local closeTween1 = TweenService:Create(self.Shadow, TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
         Size = UDim2.new(0, 0, 0, 0)
     })
@@ -384,7 +141,7 @@ function Limitless:close()
     closeTween2:Play()
     
     closeTween2.Completed:Once(function()
-        if Limitless.enabled then
+        if Library.enabled then
             return
         end
         self.Container.Visible = false
@@ -393,17 +150,17 @@ function Limitless:close()
     end)
 end
 
-function Limitless:drag()
-    if not Limitless.drag_position then
+function Library:drag()
+    if not Library.drag_position then
         return
     end
     
-    if not Limitless.start_position then
+    if not Library.start_position then
         return
     end
     
-    local delta = self.input.Position - Limitless.drag_position
-    local position = UDim2.new(Limitless.start_position.X.Scale, Limitless.start_position.X.Offset + delta.X, Limitless.start_position.Y.Scale, Limitless.start_position.Y.Offset + delta.Y)
+    local delta = self.input.Position - Library.drag_position
+    local position = UDim2.new(Library.start_position.X.Scale, Library.start_position.X.Offset + delta.X, Library.start_position.Y.Scale, Library.start_position.Y.Offset + delta.Y)
     TweenService:Create(self.container.Container, TweenInfo.new(0.2), {
         Position = position
     }):Play()
@@ -412,35 +169,20 @@ function Limitless:drag()
     }):Play()
 end
 
-function Limitless:visible()
-    Limitless.enabled = not Limitless.enabled
-    if Limitless.enabled then
-        Limitless.open(self)
+function Library:visible()
+    Library.enabled = not Library.enabled
+    if Library.enabled then
+        Library.open(self)
     else
-        Limitless.close(self)
+        Library.close(self)
     end
 end
 
--- Enhanced CreateWindow function with all options
-function Limitless:CreateWindow(options)
-    local title = options.Title or "Limitless Hub"
-    local icon = options.Icon or "door-open"
-    local author = options.Author or "Limitless"
-    local size = options.Size or UDim2.new(0, 699, 0, 426)
-    local theme = options.Theme or "Dark"
-    local resizable = options.Resizable ~= false
-    local keySystem = options.KeySystem or false
-    
-    if keySystem then
-        -- Implement key system logic here
-    end
-    
-    self:SetTheme(theme)
-    
+function Library:new()
     local container = Instance.new("ScreenGui")
     container.Name = "limitless"
     container.Parent = CoreGui
-    Limitless.core = container
+    Library.core = container
 
     local Shadow = Instance.new("ImageLabel")
     Shadow.Name = "Shadow"
@@ -738,14 +480,14 @@ function Limitless:CreateWindow(options)
 
     container.Container.InputBegan:Connect(function(input: InputObject)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            Limitless.dragging = true
-            Limitless.drag_position = input.Position
-            Limitless.start_position = container.Container.Position
+            Library.dragging = true
+            Library.drag_position = input.Position
+            Library.start_position = container.Container.Position
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    Limitless.dragging = false
-                    Limitless.drag_position = nil
-                    Limitless.start_position = nil
+                    Library.dragging = false
+                    Library.drag_position = nil
+                    Library.start_position = nil
                 end
             end)
         end
@@ -753,7 +495,7 @@ function Limitless:CreateWindow(options)
 
     UserInputService.InputChanged:Connect(function(input: InputObject)
         if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            Limitless.drag({
+            Library.drag({
                 input = input,
                 container = container
             })
@@ -762,107 +504,81 @@ function Limitless:CreateWindow(options)
 
     UserInputService.InputBegan:Connect(function(input: InputObject, process: boolean)
         if process then return end
-        if not Limitless.exist() then return end
+        if not Library.exist() then return end
         if input.KeyCode == Enum.KeyCode.Insert then
-            Limitless.visible(container)
+            Library.visible(container)
         end
     end)
 
     mobile_button.MouseButton1Click:Connect(function()
-        Limitless.visible(container)
+        Library.visible(container)
     end)
     
     -- Play startup sound and effects
-    Limitless:play_startup_sound()
-    Limitless:create_startup_effects(container)
+    Library:play_startup_sound()
+    Library:create_startup_effects(container)
 
-    local Window = {}
-    
-    -- Added window methods
-    function Window:SetBackgroundImage(imageId)
-        if self.Container then
-            local bg = Instance.new("ImageLabel")
-            bg.Size = UDim2.new(1, 0, 1, 0)
-            bg.BackgroundTransparency = 1
-            bg.Image = imageId
-            bg.Parent = self.Container
-            bg.ZIndex = -1
-        end
-    end
-    
-    function Window:SetBackgroundImageTransparency(transparency)
-        local bg = self.Container:FindFirstChild("ImageLabel")
-        if bg then
-            bg.ImageTransparency = transparency
-        end
-    end
-    
-    function Window:SetToggleKey(keyCode)
-        UserInputService.InputBegan:Connect(function(input, processed)
-            if processed then return end
-            if input.KeyCode == keyCode then
-                Limitless.visible(container)
+    local Tab = {}
+
+    function Tab:update_sections()
+        self.left_section.Visible = true
+        self.right_section.Visible = true
+        for _, object in container.Container:GetChildren() do
+            if not object.Name:find("Section") then
+                continue
             end
-        end)
-    end
-    
-    function Window:ToggleTransparency(enabled)
-        if self.Container then
-            self.Container.BackgroundTransparency = enabled and 0.5 or 0
-        end
-    end
-    
-    function Window:IsResizable(enabled)
-        -- Implement resizable logic
-    end
-    
-    function Window:SelectTab(tabNumber)
-        local tabs = container.Container.Tabs:GetChildren()
-        local tabCount = 0
-        for _, tab in ipairs(tabs) do
-            if tab:IsA("TextButton") and tab.Name == "Tab" then
-                tabCount = tabCount + 1
-                if tabCount == tabNumber then
-                    tab.MouseButton1Click:Fire()
-                    break
-                end
+            if object == self.left_section then 
+                continue
             end
+            if object == self.right_section then
+                continue
+            end
+            object.Visible = false
         end
     end
-    
-    -- Added Tag function
-    function Window:Tag(options)
-        local title = options.Title or "Tag"
-        local color = options.Color or Color3.fromRGB(48, 255, 106)
-        
-        local tag = Instance.new("Frame")
-        tag.Size = UDim2.new(0, 60, 0, 20)
-        tag.Position = UDim2.new(1, -70, 0, 10)
-        tag.BackgroundColor3 = color
-        tag.BorderSizePixel = 0
-        tag.Parent = container.Container
-        
-        local tagCorner = Instance.new("UICorner")
-        tagCorner.CornerRadius = UDim.new(0, 10)
-        tagCorner.Parent = tag
-        
-        local tagLabel = Instance.new("TextLabel")
-        tagLabel.Size = UDim2.new(1, 0, 1, 0)
-        tagLabel.BackgroundTransparency = 1
-        tagLabel.Text = title
-        tagLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        tagLabel.TextScaled = true
-        tagLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Bold)
-        tagLabel.Parent = tag
-        
-        return tag
+
+    function Tab:open_tab()
+        Tab.update_sections({
+            left_section = self.left_section,
+            right_section = self.right_section
+        })
+        TweenService:Create(self.tab.Fill, TweenInfo.new(0.4), {
+            BackgroundTransparency = 0
+        }):Play()
+        TweenService:Create(self.tab.Glow, TweenInfo.new(0.4), {
+            ImageTransparency = 0
+        }):Play()
+        TweenService:Create(self.tab.TextLabel, TweenInfo.new(0.4), {
+            TextTransparency = 0
+        }):Play()
+        TweenService:Create(self.tab.Logo, TweenInfo.new(0.4), {
+            ImageTransparency = 0
+        }):Play()
+        for _, object in tabs:GetChildren() do
+            if object.Name ~= 'Tab' then
+                continue
+            end
+            if object == self.tab then
+                continue
+            end
+            TweenService:Create(object.Fill, TweenInfo.new(0.4), {
+                BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(object.Glow, TweenInfo.new(0.4), {
+                ImageTransparency = 1
+            }):Play()
+            
+            TweenService:Create(object.TextLabel, TweenInfo.new(0.4), {
+                TextTransparency = 0.5
+            }):Play()
+            
+            TweenService:Create(object.Logo, TweenInfo.new(0.4), {
+                ImageTransparency = 0.5
+            }):Play()
+        end
     end
-    
-    -- Enhanced Tab function
-    function Window:Tab(options)
-        local title = options.Title or "Tab"
-        local icon = options.Icon or "bird"
-        
+
+    function Tab:create_tab()
         local tab = Instance.new("TextButton")
         tab.Name = "Tab"
         tab.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
@@ -892,7 +608,7 @@ function Limitless:CreateWindow(options)
         TextLabel.Size = UDim2.new(0, 124, 0, 15)
         TextLabel.ZIndex = 3
         TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
-        TextLabel.Text = title
+        TextLabel.Text = self
         TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
         TextLabel.TextScaled = true
         TextLabel.TextSize = 14.000
@@ -986,84 +702,95 @@ function Limitless:CreateWindow(options)
         rightsectionlist.SortOrder = Enum.SortOrder.LayoutOrder
         rightsectionlist.Padding = UDim.new(0, 7)
 
-        left_section.Visible = false
-        right_section.Visible = false
+        if container.Container:FindFirstChild('RightSection') then
+            left_section.Visible = false
+            right_section.Visible = false
+        else
+            Tab.open_tab({
+                tab = tab,
+                left_section = left_section,
+                right_section = right_section
+            })
+        end
 
         left_section.Parent = container.Container
         right_section.Parent = container.Container
 
         tab.MouseButton1Click:Connect(function()
-            for _, object in container.Container:GetChildren() do
-                if not object.Name:find("Section") then
-                    continue
-                end
-                object.Visible = false
-            end
-            left_section.Visible = true
-            right_section.Visible = true
-            TweenService:Create(tab.Fill, TweenInfo.new(0.4), {
-                BackgroundTransparency = 0
-            }):Play()
-            TweenService:Create(tab.Glow, TweenInfo.new(0.4), {
-                ImageTransparency = 0
-            }):Play()
-            TweenService:Create(tab.TextLabel, TweenInfo.new(0.4), {
-                TextTransparency = 0
-            }):Play()
-            TweenService:Create(tab.Logo, TweenInfo.new(0.4), {
-                ImageTransparency = 0
-            }):Play()
-            for _, object in tabs:GetChildren() do
-                if object.Name ~= 'Tab' then
-                    continue
-                end
-                if object == tab then
-                    continue
-                end
-                TweenService:Create(object.Fill, TweenInfo.new(0.4), {
-                    BackgroundTransparency = 1
-                }):Play()
-                TweenService:Create(object.Glow, TweenInfo.new(0.4), {
-                    ImageTransparency = 1
-                }):Play()
-                
-                TweenService:Create(object.TextLabel, TweenInfo.new(0.4), {
-                    TextTransparency = 0.5
-                }):Play()
-                
-                TweenService:Create(object.Logo, TweenInfo.new(0.4), {
-                    ImageTransparency = 0.5
-                }):Play()
-            end
+            Tab.open_tab({
+                tab = tab,
+                left_section = left_section,
+                right_section = right_section
+            })
         end)
-        
-        local Tab = {}
-        
-        -- Added Section function
-        function Tab:Section(options)
-            local sectionTitle = options.Title or "Section"
-            local opened = options.Opened ~= false
-            
-            local Section = {}
-            
-            function Section:SetTitle(newTitle)
-                -- Implementation for setting section title
-            end
-            
-            function Section:Destroy()
-                -- Implementation for destroying section
-            end
-            
-            return Section
+
+        local Module = {}
+
+        function Module:create_title()
+            local section = self.section == 'left' and left_section or right_section
+            local title = Instance.new("TextLabel")
+            title.Name = "Title"
+            title.AnchorPoint = Vector2.new(0.5, 0.5)
+            title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            title.BackgroundTransparency = 1.000
+            title.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            title.BorderSizePixel = 0
+            title.Position = UDim2.new(0.531395316, 0, 0.139784947, 0)
+            title.Size = UDim2.new(0, 201, 0, 15)
+            title.ZIndex = 2
+            title.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.SemiBold)
+            title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.TextScaled = true
+            title.TextSize = 14.000
+            title.TextWrapped = true
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Parent = section
+            title.Text = self.name
         end
-        
-        -- Added all UI element functions
-        function Tab:Button(options)
-            local title = options.Title or "Button"
-            local desc = options.Description or ""
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
+
+        function Module:create_paragraph()
+            local section = self.section == 'left' and left_section or right_section
+            local paragraph = Instance.new("Frame")
+            paragraph.Name = "Paragraph"
+            paragraph.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
+            paragraph.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            paragraph.BorderSizePixel = 0
+            paragraph.Size = UDim2.new(0, 215, 0, 80)
+            paragraph.Parent = section
+
+            local UICorner = Instance.new("UICorner")
+            UICorner.CornerRadius = UDim.new(0, 10)
+            UICorner.Parent = paragraph
+
+            local TextLabel = Instance.new("TextLabel")
+            TextLabel.Parent = paragraph
+            TextLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+            TextLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            TextLabel.BackgroundTransparency = 1.000
+            TextLabel.BorderColor3 = Color3.fromRGB(0, 0, 0)
+            TextLabel.BorderSizePixel = 0
+            TextLabel.Position = UDim2.new(0.5, 0, 0.5, 0)
+            TextLabel.Size = UDim2.new(0, 195, 0, 60)
+            TextLabel.ZIndex = 2
+            TextLabel.FontFace = Font.new("rbxasset://fonts/families/Montserrat.json", Enum.FontWeight.Regular)
+            TextLabel.Text = self.text
+            TextLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            TextLabel.TextScaled = false
+            TextLabel.TextSize = 12.000
+            TextLabel.TextWrapped = true
+            TextLabel.TextXAlignment = Enum.TextXAlignment.Left
+            TextLabel.TextYAlignment = Enum.TextYAlignment.Top
+
+            local UIPadding = Instance.new("UIPadding")
+            UIPadding.Parent = TextLabel
+            UIPadding.PaddingLeft = UDim.new(0, 5)
+            UIPadding.PaddingRight = UDim.new(0, 5)
+            UIPadding.PaddingTop = UDim.new(0, 5)
+            UIPadding.PaddingBottom = UDim.new(0, 5)
+        end
+
+        function Module:create_button()
+            local section = self.section == 'left' and left_section or right_section
             local button = Instance.new("TextButton")
             button.Name = "Button"
             button.Parent = section
@@ -1132,7 +859,7 @@ function Limitless:CreateWindow(options)
             TextLabel.TextSize = 14.000
             TextLabel.TextWrapped = true
             TextLabel.TextXAlignment = Enum.TextXAlignment.Center
-            TextLabel.Text = title
+            TextLabel.Text = self.name
 
             button.MouseEnter:Connect(function()
                 TweenService:Create(ButtonGlow, TweenInfo.new(0.3), {
@@ -1169,41 +896,38 @@ function Limitless:CreateWindow(options)
                     BackgroundTransparency = 1
                 }):Play()
                 
-                callback()
+                self.callback()
             end)
-            
-            local Button = {}
-            
-            function Button:SetTitle(newTitle)
-                -- Implementation
-            end
-            
-            function Button:SetDesc(newDesc)
-                -- Implementation  
-            end
-            
-            function Button:Lock()
-                -- Implementation
-            end
-            
-            function Button:Unlock()
-                -- Implementation
-            end
-            
-            function Button:Destroy()
-                -- Implementation
-            end
-            
-            return Button
         end
-        
-        function Tab:Toggle(options)
-            local title = options.Title or "Toggle"
-            local desc = options.Description or ""
-            local default = options.Default or false
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
+
+        function Module:enable_toggle()
+            TweenService:Create(self.Checkbox.Fill, TweenInfo.new(0.4), {
+                BackgroundTransparency = 0
+            }):Play()
+            TweenService:Create(self.Checkbox.Glow, TweenInfo.new(0.4), {
+                ImageTransparency = 0
+            }):Play()
+        end
+
+        function Module:disable_toggle()
+            TweenService:Create(self.Checkbox.Fill, TweenInfo.new(0.4), {
+                BackgroundTransparency = 1
+            }):Play()
+            TweenService:Create(self.Checkbox.Glow, TweenInfo.new(0.4), {
+                ImageTransparency = 1
+            }):Play()
+        end
+
+        function Module:update_toggle()
+            if self.state then
+                Module.enable_toggle(self.toggle)
+            else
+                Module.disable_toggle(self.toggle)
+            end
+        end
+
+        function Module:create_toggle()
+            local section = self.section == 'left' and left_section or right_section
             local toggle = Instance.new("TextButton")
             toggle.Name = "Toggle"
             toggle.Parent = section
@@ -1284,82 +1008,68 @@ function Limitless:CreateWindow(options)
             TextLabel.TextSize = 14.000
             TextLabel.TextWrapped = true
             TextLabel.TextXAlignment = Enum.TextXAlignment.Left
-            TextLabel.Text = title
+            TextLabel.Text = self.name
 
-            local function enable_toggle()
-                TweenService:Create(Checkbox.Fill, TweenInfo.new(0.4), {
-                    BackgroundTransparency = 0
-                }):Play()
-                TweenService:Create(Checkbox.Glow, TweenInfo.new(0.4), {
-                    ImageTransparency = 0
-                }):Play()
+            if not Library.Flags[self.flag] then
+                Library.Flags[self.flag] = self.enabled
             end
-
-            local function disable_toggle()
-                TweenService:Create(Checkbox.Fill, TweenInfo.new(0.4), {
-                    BackgroundTransparency = 1
-                }):Play()
-                TweenService:Create(Checkbox.Glow, TweenInfo.new(0.4), {
-                    ImageTransparency = 1
-                }):Play()
-            end
-
-            local state = default
-            if state then
-                enable_toggle()
-            else
-                disable_toggle()
-            end
+            self.callback(Library.Flags[self.flag])
+                    
+            Module.update_toggle({
+                state = Library.Flags[self.flag],
+                toggle = toggle
+            })
 
             toggle.MouseButton1Click:Connect(function()
-                state = not state
-                if state then
-                    enable_toggle()
-                else
-                    disable_toggle()
-                end
-                callback(state)
+                Library.Flags[self.flag] = not Library.Flags[self.flag]
+                Library.save_flags()
+                Module.update_toggle({
+                    state = Library.Flags[self.flag],
+                    toggle = toggle
+                })
+                self.callback(Library.Flags[self.flag])
             end)
-            
-            local Toggle = {}
-            
-            function Toggle:SetTitle(newTitle)
-                -- Implementation
-            end
-            
-            function Toggle:SetDesc(newDesc)
-                -- Implementation
-            end
-            
-            function Toggle:SetValue(value)
-                -- Implementation
-            end
-            
-            function Toggle:Lock()
-                -- Implementation
-            end
-            
-            function Toggle:Unlock()
-                -- Implementation
-            end
-            
-            function Toggle:Destroy()
-                -- Implementation
-            end
-            
-            return Toggle
         end
-        
-        function Tab:Slider(options)
-            local title = options.Title or "Slider"
-            local desc = options.Description or ""
-            local default = options.Default or 50
-            local min = options.Min or 0
-            local max = options.Max or 100
-            local rounding = options.Rounding or 1
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
+
+        function Module:update_slider()
+            local result = math.clamp((Mouse.X - self.slider.Box.AbsolutePosition.X) / self.slider.Box.AbsoluteSize.X, 0, 1)
+            if not result then
+                return
+            end
+            local number = math.floor(((self.maximum_value - self.minimum_value) * result) + self.minimum_value)
+            local slider_size = math.clamp(result, 0.001, 0.999)
+                    
+            self.slider.Box.Fill.UIGradient.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0.0, 0),
+                NumberSequenceKeypoint.new(slider_size, 0),
+                NumberSequenceKeypoint.new(math.min(slider_size + 0.001, 1), 1),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+                    
+            self.slider.Box.Glow.UIGradient.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0.0, 0),
+                NumberSequenceKeypoint.new(slider_size, 0),
+                NumberSequenceKeypoint.new(math.min(slider_size + 0.03, 1), 1),
+                NumberSequenceKeypoint.new(1, 1)
+            })
+
+            Library.Flags[self.flag] = number
+            self.slider.Number.Text = number
+            self.callback(number)
+        end
+
+        function Module:slider_loop()
+            Library.slider_drag = true
+                    
+            while Library.slider_drag do
+                Module.update_slider(self)
+                task.wait()
+            end
+        end
+
+        function Module:create_slider()
+            local drag = false
+            local section = self.section == 'left' and left_section or right_section
             local slider = Instance.new("TextButton")
             slider.Name = "Slider"
             slider.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
@@ -1480,484 +1190,38 @@ function Limitless:CreateWindow(options)
             Number.TextWrapped = true
             Number.TextXAlignment = Enum.TextXAlignment.Right
 
-            TextLabel.Text = title
-            Number.Text = default
+            TextLabel.Text = self.name
+            Number.Text = self.value
 
-            local function update_slider()
-                local result = math.clamp((Mouse.X - Box.AbsolutePosition.X) / Box.AbsoluteSize.X, 0, 1)
-                if not result then
-                    return
-                end
-                local number = math.floor(((max - min) * result) + min)
-                local slider_size = math.clamp(result, 0.001, 0.999)
-                    
-                Fill.UIGradient.Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0.0, 0),
-                    NumberSequenceKeypoint.new(slider_size, 0),
-                    NumberSequenceKeypoint.new(math.min(slider_size + 0.001, 1), 1),
-                    NumberSequenceKeypoint.new(1, 1)
-                })
-                    
-                Glow.UIGradient.Transparency = NumberSequence.new({
-                    NumberSequenceKeypoint.new(0.0, 0),
-                    NumberSequenceKeypoint.new(slider_size, 0),
-                    NumberSequenceKeypoint.new(math.min(slider_size + 0.03, 1), 1),
-                    NumberSequenceKeypoint.new(1, 1)
-                })
-
-                Number.Text = number
-                callback(number)
-            end
-
-            local drag = false
-            Hitbox.MouseButton1Down:Connect(function()
-                drag = true
-                repeat
-                    update_slider()
-                    RunService.RenderStepped:Wait()
-                until not drag
-            end)
-
-            Hitbox.MouseButton1Up:Connect(function()
-                drag = false
-            end)
-
-            Hitbox.MouseLeave:Connect(function()
-                drag = false
-            end)
-            
-            local Slider = {}
-            
-            function Slider:SetTitle(newTitle)
-                -- Implementation
-            end
-            
-            function Slider:SetDesc(newDesc)
-                -- Implementation
-            end
-            
-            function Slider:SetValue(value)
-                -- Implementation
-            end
-            
-            function Slider:Lock()
-                -- Implementation
-            end
-            
-            function Slider:Unlock()
-                -- Implementation
-            end
-            
-            function Slider:Destroy()
-                -- Implementation
-            end
-            
-            return Slider
-        end
-        
-        -- Added new UI elements
-        function Tab:Colorpicker(options)
-            local title = options.Title or "Colorpicker"
-            local desc = options.Description or ""
-            local default = options.Default or Color3.fromRGB(255, 255, 255)
-            local transparency = options.Transparency
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local colorpicker = Instance.new("TextButton")
-            colorpicker.Name = "Colorpicker"
-            colorpicker.Size = UDim2.new(0, 215, 0, 37)
-            colorpicker.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-            colorpicker.BorderSizePixel = 0
-            colorpicker.AutoButtonColor = false
-            colorpicker.Text = ""
-            colorpicker.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = colorpicker
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(0, 150, 0, 15)
-            titleLabel.Position = UDim2.new(0, 15, 0.5, -7.5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.SemiBold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = colorpicker
-            
-            local colorDisplay = Instance.new("Frame")
-            colorDisplay.Size = UDim2.new(0, 25, 0, 25)
-            colorDisplay.Position = UDim2.new(1, -35, 0.5, -12.5)
-            colorDisplay.BackgroundColor3 = default
-            colorDisplay.BorderSizePixel = 0
-            colorDisplay.Parent = colorpicker
-            
-            local displayCorner = Instance.new("UICorner")
-            displayCorner.CornerRadius = UDim.new(0, 5)
-            displayCorner.Parent = colorDisplay
-            
-            local Colorpicker = {}
-            
-            function Colorpicker:SetTitle(newTitle)
-                titleLabel.Text = newTitle
-            end
-            
-            function Colorpicker:SetValue(color)
-                colorDisplay.BackgroundColor3 = color
-                callback(color)
-            end
-            
-            return Colorpicker
-        end
-        
-        function Tab:Dropdown(options)
-            local title = options.Title or "Dropdown"
-            local desc = options.Description or ""
-            local values = options.Values or {"Option 1", "Option 2"}
-            local multi = options.Multi or false
-            local default = options.Default or values[1]
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local dropdown = Instance.new("TextButton")
-            dropdown.Name = "Dropdown"
-            dropdown.Size = UDim2.new(0, 215, 0, 37)
-            dropdown.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-            dropdown.BorderSizePixel = 0
-            dropdown.AutoButtonColor = false
-            dropdown.Text = ""
-            dropdown.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = dropdown
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(0, 120, 0, 15)
-            titleLabel.Position = UDim2.new(0, 15, 0.5, -7.5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.SemiBold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = dropdown
-            
-            local valueLabel = Instance.new("TextLabel")
-            valueLabel.Size = UDim2.new(0, 70, 0, 15)
-            valueLabel.Position = UDim2.new(1, -85, 0.5, -7.5)
-            valueLabel.BackgroundTransparency = 1
-            valueLabel.Text = default
-            valueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            valueLabel.TextScaled = true
-            valueLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Regular)
-            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-            valueLabel.Parent = dropdown
-            
-            local Dropdown = {}
-            
-            function Dropdown:SetTitle(newTitle)
-                titleLabel.Text = newTitle
-            end
-            
-            function Dropdown:SetValue(value)
-                valueLabel.Text = value
-                callback(value)
-            end
-            
-            function Dropdown:Refresh(newValues)
-                values = newValues
-            end
-            
-            return Dropdown
-        end
-        
-        function Tab:Input(options)
-            local title = options.Title or "Input"
-            local desc = options.Description or ""
-            local default = options.Default or ""
-            local placeholder = options.Placeholder or "Enter text..."
-            local numeric = options.Numeric or false
-            local finished = options.Finished or false
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local input = Instance.new("Frame")
-            input.Name = "Input"
-            input.Size = UDim2.new(0, 215, 0, 37)
-            input.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-            input.BorderSizePixel = 0
-            input.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = input
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(0, 80, 0, 15)
-            titleLabel.Position = UDim2.new(0, 15, 0.5, -7.5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.SemiBold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = input
-            
-            local textBox = Instance.new("TextBox")
-            textBox.Size = UDim2.new(0, 110, 0, 25)
-            textBox.Position = UDim2.new(1, -120, 0.5, -12.5)
-            textBox.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-            textBox.BorderSizePixel = 0
-            textBox.Text = default
-            textBox.PlaceholderText = placeholder
-            textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-            textBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
-            textBox.TextScaled = true
-            textBox.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Regular)
-            textBox.Parent = input
-            
-            local textBoxCorner = Instance.new("UICorner")
-            textBoxCorner.CornerRadius = UDim.new(0, 5)
-            textBoxCorner.Parent = textBox
-            
-            local Input = {}
-            
-            function Input:SetTitle(newTitle)
-                titleLabel.Text = newTitle
-            end
-            
-            function Input:SetValue(value)
-                textBox.Text = value
-            end
-            
-            if finished then
-                textBox.FocusLost:Connect(function()
-                    callback(textBox.Text)
-                end)
+            if not Library.Flags[self.flag] then
+                Library.Flags[self.flag] = self.value
             else
-                textBox:GetPropertyChangedSignal("Text"):Connect(function()
-                    callback(textBox.Text)
-                end)
+                slider.Box.TextHolder.Text = Library.Flags[self.flag]
             end
-            
-            return Input
-        end
-        
-        function Tab:Keybind(options)
-            local title = options.Title or "Keybind"
-            local desc = options.Description or ""
-            local default = options.Default or Enum.KeyCode.F
-            local hold = options.Hold or false
-            local callback = options.Callback or function() end
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local keybind = Instance.new("TextButton")
-            keybind.Name = "Keybind"
-            keybind.Size = UDim2.new(0, 215, 0, 37)
-            keybind.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-            keybind.BorderSizePixel = 0
-            keybind.AutoButtonColor = false
-            keybind.Text = ""
-            keybind.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = keybind
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(0, 120, 0, 15)
-            titleLabel.Position = UDim2.new(0, 15, 0.5, -7.5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.SemiBold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = keybind
-            
-            local keyLabel = Instance.new("TextLabel")
-            keyLabel.Size = UDim2.new(0, 70, 0, 15)
-            keyLabel.Position = UDim2.new(1, -85, 0.5, -7.5)
-            keyLabel.BackgroundTransparency = 1
-            keyLabel.Text = default.Name
-            keyLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            keyLabel.TextScaled = true
-            keyLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Regular)
-            keyLabel.TextXAlignment = Enum.TextXAlignment.Right
-            keyLabel.Parent = keybind
-            
-            local Keybind = {}
-            
-            function Keybind:SetTitle(newTitle)
-                titleLabel.Text = newTitle
-            end
-            
-            function Keybind:SetValue(keyCode)
-                keyLabel.Text = keyCode.Name
-                default = keyCode
-            end
-            
-            UserInputService.InputBegan:Connect(function(input, processed)
-                if processed then return end
-                if input.KeyCode == default then
-                    if hold then
-                        callback(true)
-                    else
-                        callback()
-                    end
-                end
+
+            self.callback(Library.Flags[self.flag])
+
+            slider.Box.TextHolder.FocusLost:Connect(function()
+                self.callback(slider.Box.TextHolder.Text)
+                Library.Flags[self.flag] = slider.Box.TextHolder.Text
+                Library.save_flags()
             end)
-            
-            if hold then
-                UserInputService.InputEnded:Connect(function(input, processed)
-                    if processed then return end
-                    if input.KeyCode == default then
-                        callback(false)
-                    end
-                end)
+
+            function Textbox:update(text)
+                if slider and slider.Box and slider.Box.TextHolder then
+                    slider.Box.TextHolder.Text = text
+                    Library.Flags[self.flag] = text
+                    self.callback(text)
+                end
             end
-            
-            return Keybind
+
+            return Textbox;
         end
-        
-        function Tab:Paragraph(options)
-            local title = options.Title or "Paragraph"
-            local content = options.Content or "This is a paragraph."
-            local image = options.Image
-            local imageSize = options.ImageSize or UDim2.new(0, 50, 0, 50)
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local paragraph = Instance.new("Frame")
-            paragraph.Name = "Paragraph"
-            paragraph.Size = UDim2.new(0, 215, 0, 80)
-            paragraph.BackgroundColor3 = Color3.fromRGB(27, 28, 33)
-            paragraph.BorderSizePixel = 0
-            paragraph.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = paragraph
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(1, -20, 0, 20)
-            titleLabel.Position = UDim2.new(0, 10, 0, 5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Bold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = paragraph
-            
-            local contentLabel = Instance.new("TextLabel")
-            contentLabel.Size = UDim2.new(1, -20, 0, 50)
-            contentLabel.Position = UDim2.new(0, 10, 0, 25)
-            contentLabel.BackgroundTransparency = 1
-            contentLabel.Text = content
-            contentLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-            contentLabel.TextScaled = false
-            contentLabel.TextSize = 12
-            contentLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Regular)
-            contentLabel.TextWrapped = true
-            contentLabel.TextXAlignment = Enum.TextXAlignment.Left
-            contentLabel.TextYAlignment = Enum.TextYAlignment.Top
-            contentLabel.Parent = paragraph
-            
-            if image then
-                local imageLabel = Instance.new("ImageLabel")
-                imageLabel.Size = imageSize
-                imageLabel.Position = UDim2.new(1, -imageSize.X.Offset - 10, 0, 5)
-                imageLabel.BackgroundTransparency = 1
-                imageLabel.Image = image
-                imageLabel.Parent = paragraph
-                
-                local imageCorner = Instance.new("UICorner")
-                imageCorner.CornerRadius = UDim.new(0, 5)
-                imageCorner.Parent = imageLabel
-            end
-            
-            local Paragraph = {}
-            
-            function Paragraph:SetTitle(newTitle)
-                titleLabel.Text = newTitle
-            end
-            
-            function Paragraph:SetContent(newContent)
-                contentLabel.Text = newContent
-            end
-            
-            return Paragraph
-        end
-        
-        function Tab:Code(options)
-            local title = options.Title or "Code"
-            local content = options.Content or "print('Hello World')"
-            local language = options.Language or "lua"
-            
-            local section = options.Section == 'right' and right_section or left_section
-            
-            local code = Instance.new("Frame")
-            code.Name = "Code"
-            code.Size = UDim2.new(0, 215, 0, 100)
-            code.BackgroundColor3 = Color3.fromRGB(22, 23, 27)
-            code.BorderSizePixel = 0
-            code.Parent = section
-            
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 10)
-            corner.Parent = code
-            
-            local titleLabel = Instance.new("TextLabel")
-            titleLabel.Size = UDim2.new(1, -20, 0, 20)
-            titleLabel.Position = UDim2.new(0, 10, 0, 5)
-            titleLabel.BackgroundTransparency = 1
-            titleLabel.Text = title .. " (" .. language .. ")"
-            titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-            titleLabel.TextScaled = true
-            titleLabel.FontFace = Font.new(Limitless.currentFont, Enum.FontWeight.Bold)
-            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
-            titleLabel.Parent = code
-            
-            local codeLabel = Instance.new("TextLabel")
-            codeLabel.Size = UDim2.new(1, -20, 0, 70)
-            codeLabel.Position = UDim2.new(0, 10, 0, 25)
-            codeLabel.BackgroundTransparency = 1
-            codeLabel.Text = content
-            codeLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
-            codeLabel.TextScaled = false
-            codeLabel.TextSize = 11
-            codeLabel.FontFace = Font.new("rbxasset://fonts/families/RobotoMono.json", Enum.FontWeight.Regular)
-            codeLabel.TextWrapped = true
-            codeLabel.TextXAlignment = Enum.TextXAlignment.Left
-            codeLabel.TextYAlignment = Enum.TextYAlignment.Top
-            codeLabel.Parent = code
-            
-            local Code = {}
-            
-            function Code:SetTitle(newTitle)
-                titleLabel.Text = newTitle .. " (" .. language .. ")"
-            end
-            
-            function Code:SetContent(newContent)
-                codeLabel.Text = newContent
-            end
-            
-            return Code
-        end
-        
-        return Tab
+
+        return Module
     end
-    
-    return Window
+
+    return Tab
 end
 
-return Limitless
+return Library
